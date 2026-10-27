@@ -1,4 +1,6 @@
 import logging
+import asyncio
+from aiohttp import web
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -27,29 +29,26 @@ async def start_handler(client, message):
         "మీ గ్రూప్‌లో సినిమా పేరు టైప్ చేస్తే చాలు, నేను ఆ సినిమాని వెతికి ఇస్తాను! 🎬"
     )
 
-# ఛానెల్‌లో కొత్తగా పోస్ట్ అయ్యే ఫైల్స్‌ని ఆటోమేటిగ్గా డేటాబేస్‌లో సేవ్ చేయడం కోసం
+# ఛానెల్‌లో కొత్తగా పోస్ట్ అయ్యే ఫైల్స్‌ని ఆటోమేటిగ్గా డేటాబేస్‌లో సేవ్ చేయడం
 @app.on_message(filters.chat(CHANNEL_ID) & (filters.document | filters.video | filters.audio))
 async def index_files(client, message):
     media = message.document or message.video or message.audio
     if media:
         file_name = media.file_name or "Unknown"
         file_id = media.file_id
-        
-        # డేటాబేస్‌లో సేవ్ చేయడం
         await collection.update_one(
             {"file_id": file_id},
             {"$set": {"file_name": file_name, "file_id": file_id}},
             upsert=True
         )
 
-# గ్రూప్‌లో సినిమా పేరు అడిగితే వెతికి పంపడం కోసం
+# గ్రూప్‌లో సినిమా పేరు అడిగితే వెతికి పంపడం
 @app.on_message(filters.group & ~filters.command("start"))
 async def search_files(client, message):
     query = message.text
     if not query:
         return
     
-    # డేటాబేస్‌లో మ్యాచింగ్ ఫైల్స్ వెతకడం
     results = await collection.find({"file_name": {"$regex": query, "$options": "i"}}).to_list(length=10)
     
     if not results:
@@ -59,10 +58,28 @@ async def search_files(client, message):
     for file in results:
         f_name = file["file_name"]
         f_id = file["file_id"]
-        # నేరుగా ఫైల్ పంపడం
         await client.send_cached_media(message.chat.id, file_id=f_id, caption=f"🎬 **{f_name}**\n📥 Powered by Nittu Movies")
 
-# బాట్ రన్ చేయడం
+# Render కోసం చిన్న వెబ్ సర్వర్ (Port Binding కోసమ్)
+async def web_server():
+    routes = web.RouteTableDef()
+    @routes.get("/")
+    async def hello_handler(request):
+        return web.Response(text="Nittu Movie Bot is Alive!")
+    
+    web_app = web.Application()
+    web_app.add_routes(routes)
+    runner = web.AppRunner(web_app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", 8080)
+    await site.start()
+
+async def main():
+    await app.start()
+    await web_server()
+    await asyncio.Event().wait()
+
 if __name__ == "__main__":
-    print("🤖 బాట్ విజయవంతంగా స్టార్ట్ అవుతుంది...")
-    app.run()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
+    
