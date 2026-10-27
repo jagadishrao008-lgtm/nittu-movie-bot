@@ -6,20 +6,22 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 logging.basicConfig(level=logging.INFO)
 
-API_ID = 35992347
-API_HASH = "a3c7960f6fb6a8b4cd3cdd9f4b93737f"
 BOT_TOKEN = "8791951760:AAHCTPRz1lfzZILE0Uhye7rHQphxKnZ1urQ"
 CHANNEL_ID = -1001813593588
 MONGO_URL = "mongodb+srv://jagadishrao008_db_user:OwRNyuQsYWxyH3VB@cluster0.mongodb.net/?retryWrites=true&w=majority"
 
-app = Client("NittuMovieFilter", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+# ఇక్కడ api_id, api_hash తీసేసి కేవలం bot_token తో మాత్రమే ఇస్తున్నాము
+app = Client(
+    "NittuMovieFilter",
+    bot_token=BOT_TOKEN
+)
+
 db_client = AsyncIOMotorClient(MONGO_URL)
 db = db_client["NittuMovieDB"]
 collection = db["files"]
 
 @app.on_message()
 async def all_messages(client, message):
-    # ఛానెల్ నుండి వచ్చే ఫైల్స్‌ని ఆటోమేటిక్‌గా సేవ్ చేయడం
     if message.chat and message.chat.id == CHANNEL_ID:
         media = message.document or message.video or message.audio
         if media:
@@ -28,7 +30,6 @@ async def all_messages(client, message):
                 {"$set": {"file_name": media.file_name or "Unknown", "file_id": media.file_id}},
                 upsert=True
             )
-    # గ్రూప్‌లో సినిమా పేరు వెతకడం
     elif message.text and not message.text.startswith("/"):
         query = message.text
         results = await collection.find({"file_name": {"$regex": query, "$options": "i"}}).to_list(length=10)
@@ -56,5 +57,6 @@ async def main():
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
+    
     
   
