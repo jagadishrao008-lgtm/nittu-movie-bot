@@ -6,13 +6,16 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 logging.basicConfig(level=logging.INFO)
 
+API_ID = 35992347
+API_HASH = "a3c7960f6fb6a8b4cd3cdd9f4b93737f"
 BOT_TOKEN = "8791951760:AAHCTPRz1lfzZILE0Uhye7rHQphxKnZ1urQ"
 CHANNEL_ID = -1001813593588
 MONGO_URL = "mongodb+srv://jagadishrao008_db_user:OwRNyuQsYWxyH3VB@cluster0.mongodb.net/?retryWrites=true&w=majority"
 
-# ఇక్కడ api_id, api_hash తీసేసి కేవలం bot_token తో మాత్రమే ఇస్తున్నాము
 app = Client(
     "NittuMovieFilter",
+    api_id=API_ID,
+    api_hash=API_HASH,
     bot_token=BOT_TOKEN
 )
 
@@ -57,6 +60,7 @@ async def main():
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
+    
     
     
   
