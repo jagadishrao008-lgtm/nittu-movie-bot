@@ -1,7 +1,7 @@
 import logging
 import asyncio
 from aiohttp import web
-from pyrogram import Client, filters, idle
+from pyrogram import Client, filters
 from motor.motor_asyncio import AsyncIOMotorClient
 
 # లాగింగ్ సెటప్
@@ -59,7 +59,7 @@ async def search_files(client, message):
         f_id = file["file_id"]
         await client.send_cached_media(message.chat.id, file_id=f_id, caption=f"🎬 **{f_name}**\n📥 Powered by Nittu Movies")
 
-# Render కోసం వెబ్ సర్వర్ (Port కోసం)
+# Render కోసం వెబ్ సర్వర్ (Port బైండింగ్ కోసం)
 async def web_server():
     routes = web.RouteTableDef()
     @routes.get("/")
@@ -74,14 +74,18 @@ async def web_server():
     await site.start()
 
 async def main():
-    await web_server()
+    # బాట్‌ను మరియు వెబ్ సర్వర్‌ను ఒకేసారి అసింక్రోనస్‌గా స్టార్ట్ చేయడం
     await app.start()
-    print("✨ బాట్ విజయవంతంగా లైవ్‌లోకి వచ్చింది!")
-    await idle()
+    print("✨ టెలిగ్రామ్ బాట్ విజయవంతంగా స్టార్ట్ అయింది!")
+    await web_server()
+    print("🚀 రెండర్ వెబ్ సర్వర్ లైవ్‌లో ఉంది!")
+    # ప్రోగ్రామ్ ఆగిపోకుండా శాశ్వతంగా రన్ అయ్యేలా ఉంచడం
+    await asyncio.Event().wait()
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
+    
     
     
     
